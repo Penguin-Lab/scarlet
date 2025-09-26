@@ -100,8 +100,12 @@ struct Pata {
     angles_rad.ombro = -atan2(xyz.x, xyz.y);
     float y_linha = sqrt(xyz.x * xyz.x + xyz.y * xyz.y) - this->L1;
     float L = sqrt(xyz.z * xyz.z + y_linha * y_linha);
-    angles_rad.tibia = -M_PI + acos((this->L2 * this->L2 + this->L3 * this->L3 - L * L) / (2 * this->L2 * this->L3));
-    angles_rad.femur = acos((L * L + this->L2 * this->L2 - this->L3 * this->L3) / (2 * L * this->L2)) + atan2(xyz.z, y_linha);
+    float val = (this->L2 * this->L2 + this->L3 * this->L3 - L * L) / (2 * this->L2 * this->L3);
+    val = constrain(val, -1.0f, 1.0f);
+    angles_rad.tibia = -M_PI + acos(val);
+    val = (L * L + this->L2 * this->L2 - this->L3 * this->L3) / (2 * L * this->L2);
+    val = constrain(val, -1.0f, 1.0f);
+    angles_rad.femur = acos(val) + atan2(xyz.z, y_linha);
     return radToDegree(angles_rad);
   }
 
@@ -111,9 +115,9 @@ struct Pata {
     if (kn < METADE_PONTOS){
       float t = float(kn)/(METADE_PONTOS-1);
       float u = 1 - t;
-      xyz.x = xyz_ini.x + cos(angle_rad)*(-xyz_ini.x + pow(u, 3) * this->P0[0] + 3 * pow(u, 2) * t * this->P1[0] + 3 * u * pow(t, 2) * this->P2[0] + pow(t, 3) * this->P3[0]);
-      xyz.y = xyz_ini.y + sin(angle_rad)*(-xyz_ini.x + pow(u, 3) * this->P0[0] + 3 * pow(u, 2) * t * this->P1[0] + 3 * u * pow(t, 2) * this->P2[0] + pow(t, 3) * this->P3[0]);
-      xyz.z = pow(u, 3) * this->P0[1] + 3 * pow(u, 2) * t * this->P1[1] + 3 * u * pow(t, 2) * this->P2[1] + pow(t, 3) * this->P3[1];
+      xyz.x = xyz_ini.x + cos(angle_rad)*(-xyz_ini.x + u * u * u * this->P0[0] + 3 * u * u * t * this->P1[0] + 3 * u * t * t * this->P2[0] + t * t * t * this->P3[0]);
+      xyz.y = xyz_ini.y + sin(angle_rad)*(-xyz_ini.x + u * u * u * this->P0[0] + 3 * u * u * t * this->P1[0] + 3 * u * t * t * this->P2[0] + t * t * t * this->P3[0]);
+      xyz.z = u * u * u * this->P0[1] + 3 * u * u * t * this->P1[1] + 3 * u * t * t * this->P2[1] + t * t * t * this->P3[1];
     }
     else{
       xyz.x = xyz_ini.x + cos(angle_rad)*(-xyz_ini.x + this->P3[0] + (this->P0[0] - this->P3[0])*(float(kn - METADE_PONTOS) / (METADE_PONTOS - 1)));
@@ -138,9 +142,9 @@ struct Pata {
     if (kn < METADE_PONTOS){
       float t = float(kn)/(METADE_PONTOS-1);
       float u = 1 - t;
-      xyz.x = pow(u, 3) * Px[0] + 3 * pow(u, 2) * t * Px[1] + 3 * u * pow(t, 2) * Px[2] + pow(t, 3) * Px[3];
-      xyz.y = pow(u, 3) * Py[0] + 3 * pow(u, 2) * t * Py[1] + 3 * u * pow(t, 2) * Py[2] + pow(t, 3) * Py[3];
-      xyz.z = pow(u, 3) * Pz[0] + 3 * pow(u, 2) * t * Pz[1] + 3 * u * pow(t, 2) * Pz[2] + pow(t, 3) * Pz[3];
+      xyz.x = u * u * u * Px[0] + 3 * u * u * t * Px[1] + 3 * u * t * t * Px[2] + t * t * t * Px[3];
+      xyz.y = u * u * u * Py[0] + 3 * u * u * t * Py[1] + 3 * u * t * t * Py[2] + t * t * t * Py[3];
+      xyz.z = u * u * u * Pz[0] + 3 * u * u * t * Pz[1] + 3 * u * t * t * Pz[2] + t * t * t * Pz[3];
     }
     else{
       xyz.x = Px[3];
@@ -174,15 +178,10 @@ struct Pata {
 };
 
 struct Hexapod {
-  Pata EsqF, EsqM, EsqT, DirF, DirM, DirT;
+  Pata &EsqF, &EsqM, &EsqT, &DirF, &DirM, &DirT;
 
-  Hexapod(Pata EsqF, Pata EsqM, Pata EsqT, Pata DirF, Pata DirM, Pata DirT) {
-    this->EsqF = EsqF;
-    this->EsqD = EsqD;
-    this->EsqT = EsqT;
-    this->DirF = DirF;
-    this->DirD = DirD;
-    this->DirT = DirT;
+  Hexapod(Pata &EsqF, Pata &EsqM, Pata &EsqT, Pata &DirF, Pata &DirM, Pata &DirT):
+    EsqF(EsqF), EsqM(EsqM), EsqT(EsqT), DirF(DirF), DirM(DirM), DirT(DirT) {
   }
   
   void ligarHexapod(){
@@ -201,7 +200,7 @@ struct Hexapod {
     float dx = -10;
     float dy = 0;
     float dz = 10;
-    floatxyz xyz = this->DirF.trajetoriaPataBezier(this->.DirF.xyz_ini, 0, dx, dy, dz);
+    floatxyz xyz = this->DirF.trajetoriaPataBezier(this->DirF.xyz_ini, k, 0, dx, dy, dz);
     int3 angles = this->DirF.cinematicaInversa(xyz);
     this->DirF.moverPata(angles.ombro, angles.femur, angles.tibia);
   }
@@ -311,14 +310,14 @@ void TaskComunicacao(void *pvParameters) {
   for (;;) {
     Dabble.processInput();
     if (GamePad.isCirclePressed()){
-      bolha = 1;
+      estado = 1;
     }
     else if(GamePad.getRadius() > 2){
       angle_joystick = GamePad.getAngle();
-      bolha = 2;
+      estado = 2;
     }
     else{
-      bolha = 0;
+      estado = 0;
     }
     vTaskDelay(pdMS_TO_TICKS(20));   
   }
