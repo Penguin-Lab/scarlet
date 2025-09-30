@@ -89,23 +89,25 @@ struct Pata {
   floatxyz cinematicaDireta(int3 angles){
     float3 angles_rad = degreeToRad(angles);
     floatxyz xyz;
-    xyz.x = -this->L3*(cos(angles_rad.femur)*cos(angles_rad.tibia)*sin(angles_rad.ombro) - sin(angles_rad.ombro)*sin(angles_rad.femur)*sin(angles_rad.tibia)) - this->L1*sin(angles_rad.ombro) - this->L2*cos(angles_rad.femur)*sin(angles_rad.ombro);
-    xyz.y = this->L1*cos(angles_rad.ombro) - this->L3*(cos(angles_rad.ombro)*sin(angles_rad.femur)*sin(angles_rad.tibia) - cos(angles_rad.ombro)*cos(angles_rad.femur)*cos(angles_rad.tibia)) + this->L2*cos(angles_rad.ombro)*cos(angles_rad.femur);
+    // xyz.x = -this->L3*(cos(angles_rad.femur)*cos(angles_rad.tibia)*sin(angles_rad.ombro) - sin(angles_rad.ombro)*sin(angles_rad.femur)*sin(angles_rad.tibia)) - this->L1*sin(angles_rad.ombro) - this->L2*cos(angles_rad.femur)*sin(angles_rad.ombro);
+    xyz.x = -sin(angles_rad.ombro)*(this->L1 + this->L3*cos(angles_rad.femur + angles_rad.tibia) + this->L2*cos(angles_rad.femur));
+    // xyz.y = this->L1*cos(angles_rad.ombro) - this->L3*(cos(angles_rad.ombro)*sin(angles_rad.femur)*sin(angles_rad.tibia) - cos(angles_rad.ombro)*cos(angles_rad.femur)*cos(angles_rad.tibia)) + this->L2*cos(angles_rad.ombro)*cos(angles_rad.femur);
+    xyz.y = cos(angles_rad.ombro)*(this->L1 + this->L3*cos(angles_rad.femur + angles_rad.tibia) +this->L2*cos(angles_rad.femur));
     xyz.z = this->L3*sin(angles_rad.femur + angles_rad.tibia) + this->L2*sin(angles_rad.femur);
     return xyz;
   }
 
   int3 cinematicaInversa(floatxyz xyz){
     float3 angles_rad;
-    angles_rad.ombro = -atan2(xyz.x, xyz.y);
     float y_linha = sqrt(xyz.x * xyz.x + xyz.y * xyz.y) - this->L1;
     float L = sqrt(xyz.z * xyz.z + y_linha * y_linha);
-    float val = (this->L2 * this->L2 + this->L3 * this->L3 - L * L) / (2 * this->L2 * this->L3);
-    val = constrain(val, -1.0f, 1.0f);
-    angles_rad.tibia = -M_PI + acos(val);
-    val = (L * L + this->L2 * this->L2 - this->L3 * this->L3) / (2 * L * this->L2);
-    val = constrain(val, -1.0f, 1.0f);
-    angles_rad.femur = acos(val) + atan2(xyz.z, y_linha);
+
+    float alpha = acos(constrain((this->L2 * this->L2 + this->L3 * this->L3 - L * L) / (2 * this->L2 * this->L3), -1.0f, 1.0f));
+    float beta = acos(constrain((L * L + this->L2 * this->L2 - this->L3 * this->L3) / (2 * L * this->L2), -1.0f, 1.0f));
+    
+    angles_rad.tibia = -M_PI + alpha;
+    angles_rad.ombro = -atan2(xyz.x, xyz.y);
+    angles_rad.femur = beta + atan2(xyz.z, y_linha);
     return radToDegree(angles_rad);
   }
 
@@ -185,9 +187,9 @@ struct Hexapod {
   }
   
   void ligarHexapod(){
-    int3 anglesF = {35,26,-100};
+    int3 anglesF = {45,26,-100};
     int3 anglesM = {0,26,-100};
-    int3 anglesT = {-35,26,-100};
+    int3 anglesT = {-45,26,-100};
     this->EsqF.iniciaPata(anglesF);
     this->EsqM.iniciaPata(anglesM);
     this->EsqT.iniciaPata(anglesT);
