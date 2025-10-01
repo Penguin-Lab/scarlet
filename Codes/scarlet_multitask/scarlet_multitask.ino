@@ -7,6 +7,7 @@
 
 #define TOTAL_PONTOS 66
 #define METADE_PONTOS TOTAL_PONTOS / 2
+#define TOTAL_PONTOS_CIRCULAR 100
 
 int OFFSET_ESQF = 0;
 int OFFSET_DIRT = METADE_PONTOS;
@@ -150,6 +151,47 @@ struct Pata {
     }
   }
 
+  bool moverPataSuave(int angOmbro, int angFemur, int angTibia, int step) {
+    bool stoped = true;
+    if (this->angles.ombro != angOmbro) {
+      stoped = false;
+      if (abs(this->angles.ombro - angOmbro) < step){
+        this->angles.ombro = angOmbro;
+      }
+      else{
+        if (this->angles.ombro - angOmbro < 0) this->angles.ombro += step;
+        else this->angles.ombro -= step;
+      }
+      int pulso = map(this->angles.ombro, 0, 180, LIMMIN.ombro, LIMMAX.ombro);
+      pwm->setPWM(this->pins.ombro, 0, pulso);
+    }
+    if (this->angles.femur != angFemur) {
+      stoped = false;
+      if (abs(this->angles.femur - angFemur) < step){
+        this->angles.femur = angFemur;
+      }
+      else{
+        if (this->angles.femur - angFemur < 0) this->angles.femur += step;
+        else this->angles.femur -= step;
+      }
+      int pulso = map(this->angles.femur, 0, 180, LIMMIN.femur, LIMMAX.femur);
+      pwm->setPWM(this->pins.femur, 0, pulso);
+    }
+    if (this->angles.tibia != angTibia) {
+      stoped = false;
+      if (abs(this->angles.tibia - angTibia) < step){
+        this->angles.tibia = angTibia;
+      }
+      else{
+        if (this->angles.tibia - angTibia < 0) this->angles.tibia += step;
+        else this->angles.tibia -= step;
+      }
+      int pulso = map(this->angles.tibia, 0, 180, LIMMIN.tibia, LIMMAX.tibia);
+      pwm->setPWM(this->pins.tibia, 0, pulso);
+    }
+    return stoped;
+  }
+
   floatxyz cinematicaDireta(int3 angles){
     float3 angles_rad = degreeToRad(angles);
     floatxyz xyz;
@@ -237,6 +279,24 @@ struct Pata {
     Serial.println("Perna iniciada!");
   }
 
+  bool iniciaPataSuave(int3 anglesIni, int step) {
+    // Inicializa xyz inicial
+    this->xyz_ini = this->cinematicaDireta(anglesIni);
+    // Inicializa os vetores de trajetoria
+    this->P0[0] = this->xyz_ini.x-4.0;
+    this->P0[1] = this->xyz_ini.z;
+    this->P1[0] = this->P0[0] + 2.0;
+    this->P1[1] = this->P0[1] + 6.0;
+    this->P2[0] = this->P0[0] + 4.7;
+    this->P2[1] = this->P0[1] + 6.0;
+    this->P3[0] = this->P0[0] + 8.0;
+    this->P3[1] = this->P0[1];
+    // Move a pata para os angulos iniciais
+    bool stoped = this->moverPataSuave(anglesIni.ombro, anglesIni.femur, anglesIni.tibia, step);
+    if (stoped) Serial.println("Perna iniciada!");
+    return stoped;
+  }
+
   void moverPosIni() {
     int3 angles = cinematicaInversa(this->xyz_ini);
     this->moverPata(angles.ombro, angles.femur, angles.tibia);
@@ -267,6 +327,16 @@ struct Hexapod {
     this->DirF.iniciaPata(anglesF);
     this->DirM.iniciaPata(anglesM);
     this->DirT.iniciaPata(anglesT);
+    // bool stopedEsqF,stopedEsqM,stopedEsqT,stopedDirF,stopedDirM,stopedDirT = false;
+    // while((!stopedEsqF)||(!stopedEsqM)||(!stopedEsqT)||(!stopedDirF)||(!stopedDirM)||(!stopedDirT)){
+    //   stopedEsqF = this->EsqF.iniciaPataSuave(anglesF,5);
+    //   stopedEsqM = this->EsqM.iniciaPataSuave(anglesM,5);
+    //   stopedEsqT = this->EsqT.iniciaPataSuave(anglesT,5);
+    //   stopedDirF = this->DirF.iniciaPataSuave(anglesF,5);
+    //   stopedDirM = this->DirM.iniciaPataSuave(anglesM,5);
+    //   stopedDirT = this->DirT.iniciaPataSuave(anglesT,5);
+    //   delay(1000);
+    // }
   }
 
   floatxyz rotacaoPata(floatxyz ponto, int3 angles){
@@ -321,6 +391,19 @@ struct Hexapod {
     this->DirF.moverPata(anglesDirF.ombro, anglesDirF.femur, anglesDirF.tibia);
     this->EsqM.moverPata(anglesEsqM.ombro, anglesEsqM.femur, anglesEsqM.tibia);
     this->DirT.moverPata(anglesDirT.ombro, anglesDirT.femur, anglesDirT.tibia);
+  }
+
+  int3 circularRollPitchYaw(int k, int angle_max){
+    float3 angles_rad = {0.0,0.0,0.0};
+    float angle_max_rad = float(angle_max)*M_PI/180.0;
+    // Percentual em angulo do circulo (posicao do fasor)
+    int kn = k % TOTAL_PONTOS_CIRCULAR;
+    float t = float(kn)/TOTAL_PONTOS_CIRCULAR;
+    float angle_rad = 2*M_PI*t;
+    // Projecao em roll e pitch do fasor
+    angles_rad.ombro = angle_max_rad*cos(angle_rad);
+    angles_rad.femur = angle_max_rad*sin(angle_rad);
+    return radToDegree(angles_rad);
   }
 
   void darPatinha(int k){
@@ -425,9 +508,16 @@ void TaskHexapod(void *pvParameters) {
         }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-    else if(estado == 3){ // Entorta
-        int3 angles = {20,0,0};
+    else if(estado == 3){ // Rebola
+        // int3 angles = {20,0,0};
+        int3 angles = scarlet.circularRollPitchYaw(k, 10);
         scarlet.cinematicaInversaCorpo(angles);
+        if (k == TOTAL_PONTOS_CIRCULAR - 1){
+          k = 0;
+        }
+        else{
+          k++;
+        }
         vTaskDelay(pdMS_TO_TICKS(10));
     }
     else{
@@ -441,14 +531,14 @@ void TaskHexapod(void *pvParameters) {
 void TaskComunicacao(void *pvParameters) {
   for (;;) {
     Dabble.processInput();
-    if (GamePad.isCirclePressed()){
+    if (GamePad.isCirclePressed()){       // "Dar a patinha"
       estado = 1;
     }
-    else if(GamePad.getRadius() > 2){
+    else if(GamePad.getRadius() > 2){     // Andar omnidirecional
       angle_joystick = GamePad.getAngle();
       estado = 2;
     }
-    else if(GamePad.isTrianglePressed()){
+    else if(GamePad.isTrianglePressed()){ // Rebola
       estado = 3;
     }
     else{
