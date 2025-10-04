@@ -1,6 +1,5 @@
 # scarlet
-Um robô hexapod controlado por uma ESP32 automático ou remotamente. Nossa viúva negra.
-A Scarlet é uma hexapod desenvolvida para andar de forma autônoma ou para ser controlada pelo celular. Para se locomover, ela possui 6 patas de 3 graus de liberdade cada (3 motores) e uma ESP32 que comanda o conjunto! Ela é a nossa viúva negra, a irmã da Tiffany e a nova integrante robótica do nosso espaço inteligente!
+A Scarlet é uma hexapod desenvolvida na disciplina de Robôs a Patas para andar de forma autônoma ou para ser controlada pelo celular. Para se locomover, ela possui 6 patas de 3 graus de liberdade cada (3 motores) e uma ESP32 que comanda o conjunto! Ela é a nossa viúva negra, a irmã da Tiffany e a nova integrante robótica do nosso espaço inteligente!
 
 # Estrutura física
 A estrutura física do robô é composta por seis patas de três eixos cada (três motores). As patas são fixadas a duas placas de PLA para deixar o robô firme. As peças são todas projetadas em 3D e foram impressas utilizando PLA, podendo ser encontradas na pasta Pecas_3d deste projeto.
@@ -74,3 +73,15 @@ Os componentes eletrônicos embarcados no robô e equipamentos utilizados são:
 # Software
 Na pasta de códigos, há um código de programação da ESP32 (38 pinos). Ele é um exemplo em C++ do comando de movimentação da Tiffany:
 * Dabble: a ESP32 pode se comunicar com o aplicativo Dabble no celular e receber comandos de ação.
+
+## Alunos participantes e desenvolvedores da Scarlet
+* Állefe Amorim Florindo
+* Eduarda Ferreira Cipriano
+* Gustavo Assis Ferreira
+* Joab Felippe de Souza Lima
+* João Pedro Queiroz dos Santos
+* Junior Guimarães de Oliveira
+* Luis Philipe Zioto de Barros
+* Rafaela da Silva Crise
+* Ricardo dos Santos Barros
+* Samuel Gurgel Rocha
