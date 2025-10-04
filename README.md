@@ -52,7 +52,7 @@ Alguns outros itens são necessários para finalizar a estrutura da Tiffany:
 ## Placa de circuito impresso
 No projeto, foi desenvolvida uma placa de circuito para servir como shield para a ESP32 e conexão com as duas placas PCA9685 e com futuros sensores e displays I2C.
 
-<img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp0.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp2.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp_projeto.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/circuit1.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/circuit2.png" height="300">
+<img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp0.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/circuit2.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp2.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp_projeto.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/circuit1.png" height="300">
 
 
 ## Componentes eletrônicos
