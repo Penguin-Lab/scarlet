@@ -42,7 +42,7 @@ Obs 2: os motores ficam fixados nas peças por [discos metálicos pequenos padr�
 
 <img src="https://github.com/Penguin-Lab/lilla/blob/main/images/discoeixo.jpeg" height="100">
 
-<img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/pata0.png" height="300"> <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/pata1.png" height="300"> <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/corpo0.png" height="300"> <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/corpo1.png" height="300">
+<img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/pata0.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/pata1.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/corpo0.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/corpo1.png" height="300">
 
 ## Outros itens da estrutura
 Alguns outros itens são necessários para finalizar a estrutura da Tiffany:
