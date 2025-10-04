@@ -37,7 +37,11 @@ As peças em 3D desenvolvidas para este projeto foram baseadas no projeto da hex
 * Motor
   * 12x [SCARLET_TAMPA_MOTOR_DS3230.STL (41 mm)](https://github.com/Penguin-Lab/scarlet/blob/main/Pecas_3d/SCARLET_TAMPA_MOTOR_DS3230.STL)
 
-Obs: a tampa de 12 motores deverão ser trocadas pelas peças [SCARLET_TAMPA_MOTOR_DS3230.STL](https://github.com/Penguin-Lab/scarlet/blob/main/Pecas_3d/SCARLET_TAMPA_MOTOR_DS3230.STL) para que seja possível fixar os rolamentos nas patas. Serão utilizados 3 rolamentos por pata:
+Obs 1: a tampa de 12 motores deverão ser trocadas pelas peças [SCARLET_TAMPA_MOTOR_DS3230.STL](https://github.com/Penguin-Lab/scarlet/blob/main/Pecas_3d/SCARLET_TAMPA_MOTOR_DS3230.STL) para que seja possível fixar os rolamentos nas patas. Serão utilizados 3 rolamentos por pata.
+
+Obs 2: os motores ficam fixados nas peças por [discos metálicos pequenos padrão para eixos de servo](https://a.aliexpress.com/_mPHt3nf).
+
+<img src="https://github.com/Penguin-Lab/lilla/blob/main/images/discoeixo.jpeg" height="100">
 
 <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/pata0.png" height="300"> <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/pata1.png" height="300"> <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/corpo0.png" height="300"> <img src="https://github.com/Penguin-Lab/tiffany/blob/main/images/corpo1.png" height="300">
 
