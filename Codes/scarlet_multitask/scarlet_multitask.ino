@@ -7,6 +7,7 @@
 
 #define TOTAL_PONTOS 500//2000//66
 #define METADE_PONTOS TOTAL_PONTOS / 2
+#define QUARTO_PONTOS TOTAL_PONTOS / 4
 #define TOTAL_PONTOS_CIRCULAR 500
 
 int OFFSET_ESQF = 0;
@@ -102,6 +103,14 @@ struct floatxyz {
       return { x * rhs.x, y * rhs.y, z * rhs.z };
     }
 };
+
+float joystickToRad(int joystickAngle){
+  float angle_rad = (float(joystickAngle)-90)*M_PI/180.0;
+  if (angle_rad > M_PI){
+    return angle_rad - 2*M_PI;
+  }
+  return angle_rad;
+}
 
 struct Pata {
   Adafruit_PWMServoDriver* pwm;
@@ -219,7 +228,7 @@ struct Pata {
 
   floatxyz trajetoriaLinear(floatxyz xyz_ini, int k, int offset, float angle_rad){
     floatxyz xyz;
-    int kn = (k + offset) % TOTAL_PONTOS;
+    int kn = (k + offset + QUARTO_PONTOS) % TOTAL_PONTOS;
     if (kn < METADE_PONTOS){
       float t = float(kn)/(METADE_PONTOS-1);
       float u = 1 - t;
@@ -232,6 +241,22 @@ struct Pata {
       xyz.y = xyz_ini.y + sin(angle_rad)*(-xyz_ini.x + this->P3[0] + (this->P0[0] - this->P3[0])*(float(kn - METADE_PONTOS) / (METADE_PONTOS - 1)));
       xyz.z = xyz_ini.z;
     }
+    return xyz;
+  }
+
+  floatxyz mapeiaTrajetoriaCircular(floatxyz xyz_ini, floatxyz xyz_atual, float step_length, float total_angle_rad, floatxyz Ombro){
+    floatxyz xyz;
+    // Mapeamento de trajetoria linear para curva (step_length = P3[0] - xyz_ini.x)
+    float d_alpha = (total_angle_rad/2.0)*(xyz_atual.x - xyz_ini.x)/(step_length);
+    // Translacao do ponto inicial da pata para as coordenadas do corpo
+    float x = xyz_ini.x + Ombro.x;
+    float y = xyz_ini.y + Ombro.y;
+    float R = sqrt(x*x + y*y);
+    float alpha = atan2(x,y);
+    float n_alpha = alpha + d_alpha;
+    xyz.x = R*sin(n_alpha) - Ombro.x;
+    xyz.y = R*cos(n_alpha) - Ombro.y;
+    xyz.z = xyz_atual.z;
     return xyz;
   }
 
@@ -263,18 +288,23 @@ struct Pata {
     return xyz;
   }
 
+  void atualizaBezier(float step_length){
+    float half_stepping = step_length/2.0;
+    this->P0[0] = this->xyz_ini.x - half_stepping;
+    this->P0[1] = this->xyz_ini.z;
+    this->P1[0] = this->P0[0] + half_stepping/2.0;
+    this->P1[1] = this->P0[1] + 2.0*half_stepping;
+    this->P3[0] = this->P0[0] + step_length;
+    this->P3[1] = this->P0[1];
+    this->P2[0] = this->P3[0] - half_stepping/2.0;
+    this->P2[1] = this->P0[1] + 2.0*half_stepping;
+  }
+
   floatxyz iniciaPata(int3 anglesIni) {
     // Inicializa xyz inicial
     this->xyz_ini = this->cinematicaDireta(anglesIni);
     // Inicializa os vetores de trajetoria
-    this->P0[0] = this->xyz_ini.x-4.0;
-    this->P0[1] = this->xyz_ini.z;
-    this->P1[0] = this->P0[0] + 2.0;
-    this->P1[1] = this->P0[1] + 6.0;
-    this->P2[0] = this->P0[0] + 4.7;
-    this->P2[1] = this->P0[1] + 6.0;
-    this->P3[0] = this->P0[0] + 8.0;
-    this->P3[1] = this->P0[1];
+    this->atualizaBezier(-8.0);
     // Move a pata para os angulos iniciais
     this->moverPata(anglesIni.ombro, anglesIni.femur, anglesIni.tibia);
     Serial.println("Perna iniciada!");
@@ -285,18 +315,7 @@ struct Pata {
     // Atualiza xyz inicial
     this->xyz_ini = this->cinematicaDireta(anglesIni);
     // Atualiza os vetores de trajetoria
-    this->P0[0] = this->xyz_ini.x-4.0;
-    this->P0[1] = this->xyz_ini.z;
-    this->P1[0] = this->P0[0] + 2.0;
-    this->P1[1] = this->P0[1] + 6.0;
-    this->P2[0] = this->P0[0] + 4.7;
-    this->P2[1] = this->P0[1] + 6.0;
-    this->P3[0] = this->P0[0] + 8.0;
-    this->P3[1] = this->P0[1];
-										   
-																								
-												  
-				  
+    this->atualizaBezier(-8.0);
   }
 
   void moverPosIni() {
@@ -544,7 +563,7 @@ struct Hexapod {
   }
 
   void darPatinha(int k, int totalPontos){
-    float dx = -10;
+    float dx = -10; // negativo de x para frente
     float dy = 0;
     float dz = 10;
     floatxyz xyz = this->DirF.trajetoriaPataBezier(this->DirF.xyz_ini, k, 0, dx, dy, dz, totalPontos);
@@ -552,7 +571,7 @@ struct Hexapod {
     this->DirF.moverPata(angles.ombro, angles.femur, angles.tibia);
   }
 
-  void andar(int k, int angle_rad){
+  void andar(int k, float angle_rad){
     floatxyz xyzEsqF = this->EsqF.trajetoriaLinear(this->EsqF.xyz_ini, k, OFFSET_ESQF, -angle_rad);
     floatxyz xyzDirM = this->DirM.trajetoriaLinear(this->DirM.xyz_ini, k, OFFSET_DIRM, angle_rad);
     floatxyz xyzEsqT = this->EsqT.trajetoriaLinear(this->EsqT.xyz_ini, k, OFFSET_ESQT, -angle_rad);
@@ -572,7 +591,144 @@ struct Hexapod {
     this->EsqM.moverPata(anglesEsqM.ombro, anglesEsqM.femur, anglesEsqM.tibia);
     this->DirT.moverPata(anglesDirT.ombro, anglesDirT.femur, anglesDirT.tibia);
   }
-  
+
+  int andarCircular(int k, int v_max, float angle_rad){
+    float angle_abs_rad = abs(angle_rad);
+    float angle_vw_rad = angle_rad;
+    if (angle_abs_rad > M_PI/2){  // terceiro ou quarto quadrante = indo para tras
+      angle_vw_rad = M_PI - angle_vw_rad;
+    }
+    float v = -v_max*cos(angle_vw_rad);
+    float w = v_max*sin(angle_vw_rad);
+    float Esq_step_length = v + w;
+    float Dir_step_length = v - w;
+    
+    this->EsqF.atualizaBezier(Esq_step_length);
+    this->DirM.atualizaBezier(Dir_step_length);
+    this->EsqT.atualizaBezier(Esq_step_length);
+    this->DirF.atualizaBezier(Dir_step_length);
+    this->EsqM.atualizaBezier(Esq_step_length);
+    this->DirT.atualizaBezier(Dir_step_length);
+    floatxyz xyzEsqF = this->EsqF.trajetoriaLinear(this->EsqF.xyz_ini, k, OFFSET_ESQF, 0);
+    floatxyz xyzDirM = this->DirM.trajetoriaLinear(this->DirM.xyz_ini, k, OFFSET_DIRM, 0);
+    floatxyz xyzEsqT = this->EsqT.trajetoriaLinear(this->EsqT.xyz_ini, k, OFFSET_ESQT, 0);
+    floatxyz xyzDirF = this->DirF.trajetoriaLinear(this->DirF.xyz_ini, k, OFFSET_DIRF, 0);
+    floatxyz xyzEsqM = this->EsqM.trajetoriaLinear(this->EsqM.xyz_ini, k, OFFSET_ESQM, 0);
+    floatxyz xyzDirT = this->DirT.trajetoriaLinear(this->DirT.xyz_ini, k, OFFSET_DIRT, 0);
+    int3 anglesEsqF = this->EsqF.cinematicaInversa(xyzEsqF);
+    int3 anglesDirM = this->DirM.cinematicaInversa(xyzDirM);
+    int3 anglesEsqT = this->EsqT.cinematicaInversa(xyzEsqT);
+    int3 anglesDirF = this->DirF.cinematicaInversa(xyzDirF);
+    int3 anglesEsqM = this->EsqM.cinematicaInversa(xyzEsqM);
+    int3 anglesDirT = this->DirT.cinematicaInversa(xyzDirT);
+    this->EsqF.moverPata(anglesEsqF.ombro, anglesEsqF.femur, anglesEsqF.tibia);
+    this->DirM.moverPata(anglesDirM.ombro, anglesDirM.femur, anglesDirM.tibia);
+    this->EsqT.moverPata(anglesEsqT.ombro, anglesEsqT.femur, anglesEsqT.tibia);
+    this->DirF.moverPata(anglesDirF.ombro, anglesDirF.femur, anglesDirF.tibia);
+    this->EsqM.moverPata(anglesEsqM.ombro, anglesEsqM.femur, anglesEsqM.tibia);
+    this->DirT.moverPata(anglesDirT.ombro, anglesDirT.femur, anglesDirT.tibia);
+    
+    if (angle_abs_rad > M_PI/2){
+      if (k == 0){
+        return TOTAL_PONTOS - 1;
+      }
+      else{
+        return k-1;
+      }
+    }
+    else{
+      if (k == TOTAL_PONTOS - 1){
+        return 0;
+      }
+      else{
+        return k+1;
+      }
+    }
+  }
+/*
+  void andarCircular(int k, float angle_rad){
+    float angle_lim_rad = M_PI/36.0; //  5 degree
+    float angle_abs_rad = abs(angle_rad);
+    // Ponto trajetoria frente ou tras
+    float angle_frente = 0;
+    if (angle_abs_rad > M_PI/2){  // terceiro ou quarto quadrante = indo para tras
+        angle_frente = M_PI;
+    }
+    floatxyz xyzEsqF = this->EsqF.trajetoriaLinear(this->EsqF.xyz_ini, k, OFFSET_ESQF, -angle_frente);
+    floatxyz xyzDirM = this->DirM.trajetoriaLinear(this->DirM.xyz_ini, k, OFFSET_DIRM, angle_frente);
+    floatxyz xyzEsqT = this->EsqT.trajetoriaLinear(this->EsqT.xyz_ini, k, OFFSET_ESQT, -angle_frente);
+    floatxyz xyzDirF = this->DirF.trajetoriaLinear(this->DirF.xyz_ini, k, OFFSET_DIRF, angle_frente);
+    floatxyz xyzEsqM = this->EsqM.trajetoriaLinear(this->EsqM.xyz_ini, k, OFFSET_ESQM, -angle_frente);
+    floatxyz xyzDirT = this->DirT.trajetoriaLinear(this->DirT.xyz_ini, k, OFFSET_DIRT, angle_frente);
+    // Curvar a trajetoria ou nao
+    if ((angle_abs_rad > angle_lim_rad)&&(angle_abs_rad < M_PI - (angle_lim_rad))){
+      float angle_traj_rad = M_PI/9.0;  // 20 degree
+      // float max_ray = 
+      floatxyz delta_x = {0.0,0.0,0.0};
+      if (angle_rad < 0){
+        delta_x.y = 10*cos(angle_rad);
+        angle_traj_rad = -M_PI/9.0;
+      }
+      else{
+        delta_x.y = -10*cos(angle_rad);
+      }
+    // floatxyz xyzEsqF_linear = this->EsqF.trajetoriaLinear(this->EsqF.xyz_ini, k, OFFSET_ESQF, -angle_traj_rad);
+    // floatxyz xyzDirM_linear = this->DirM.trajetoriaLinear(this->DirM.xyz_ini, k, OFFSET_DIRM, angle_traj_rad);
+    // floatxyz xyzEsqT_linear = this->EsqT.trajetoriaLinear(this->EsqT.xyz_ini, k, OFFSET_ESQT, -angle_traj_rad);
+    // floatxyz xyzDirF_linear = this->DirF.trajetoriaLinear(this->DirF.xyz_ini, k, OFFSET_DIRF, angle_traj_rad);
+    // floatxyz xyzEsqM_linear = this->EsqM.trajetoriaLinear(this->EsqM.xyz_ini, k, OFFSET_ESQM, -angle_traj_rad);
+    // floatxyz xyzDirT_linear = this->DirT.trajetoriaLinear(this->DirT.xyz_ini, k, OFFSET_DIRT, angle_traj_rad);
+    // floatxyz xyzEsqF = this->EsqF.trajetoriaLinear(this->EsqF.xyz_ini, k, OFFSET_ESQF, 0);
+    // floatxyz xyzDirM = this->DirM.trajetoriaLinear(this->DirM.xyz_ini, k, OFFSET_DIRM, 0);
+    // floatxyz xyzEsqT = this->EsqT.trajetoriaLinear(this->EsqT.xyz_ini, k, OFFSET_ESQT, 0);
+    // floatxyz xyzDirF = this->DirF.trajetoriaLinear(this->DirF.xyz_ini, k, OFFSET_DIRF, 0);
+    // floatxyz xyzEsqM = this->EsqM.trajetoriaLinear(this->EsqM.xyz_ini, k, OFFSET_ESQM, 0);
+    // floatxyz xyzDirT = this->DirT.trajetoriaLinear(this->DirT.xyz_ini, k, OFFSET_DIRT, 0);
+    
+      floatxyz signalsDir = {1.0,-1.0,1.0};
+      floatxyz deltaOmbEsqF = OmbEsqF;
+      floatxyz deltaOmbDirM = OmbDirM;
+      floatxyz deltaOmbEsqT = OmbEsqT;
+      floatxyz deltaOmbDirF = OmbDirF;
+      floatxyz deltaOmbEsqM = OmbEsqM;
+      floatxyz deltaOmbDirT = OmbDirT;
+      // floatxyz deltaOmbEsqF = OmbEsqF + delta_x;
+      // floatxyz deltaOmbDirM = OmbDirM*signalsDir + delta_x*signalsDir;
+      // floatxyz deltaOmbEsqT = OmbEsqT + delta_x;
+      // floatxyz deltaOmbDirF = OmbDirF*signalsDir + delta_x*signalsDir;
+      // floatxyz deltaOmbEsqM = OmbEsqM + delta_x;
+      // floatxyz deltaOmbDirT = OmbDirT*signalsDir + delta_x*signalsDir;
+    // OmbEsqF = {8.30,5.55,0.0};
+    // OmbDirM = {0.0,-7.50,0.0};
+    // OmbEsqT = {-8.29,5.50,0.0};
+    // OmbDirF = {8.30,-5.55,0.0};
+    // OmbEsqM = {0.0,7.50,0.0};
+    // OmbDirT = {-8.29,-5.50,0.0};
+    // floatxyz signalsEsq = {-1.0,1.0,1.0};
+      xyzEsqF = this->EsqF.mapeiaTrajetoriaCircular(this->EsqF.xyz_ini, xyzEsqF, this->EsqF.P3[0] - this->EsqF.xyz_ini.x, -angle_traj_rad, deltaOmbEsqF);
+      xyzDirM = this->DirM.mapeiaTrajetoriaCircular(this->DirM.xyz_ini, xyzDirM, this->DirM.P3[0] - this->DirM.xyz_ini.x, angle_traj_rad, deltaOmbDirM);
+      xyzEsqT = this->EsqT.mapeiaTrajetoriaCircular(this->EsqT.xyz_ini, xyzEsqT, this->EsqT.P3[0] - this->EsqT.xyz_ini.x, -angle_traj_rad, deltaOmbEsqT);
+      xyzDirF = this->DirF.mapeiaTrajetoriaCircular(this->DirF.xyz_ini, xyzDirF, this->DirF.P3[0] - this->DirF.xyz_ini.x, angle_traj_rad, deltaOmbDirF);
+      xyzEsqM = this->EsqM.mapeiaTrajetoriaCircular(this->EsqM.xyz_ini, xyzEsqM, this->EsqM.P3[0] - this->EsqM.xyz_ini.x, -angle_traj_rad, deltaOmbEsqM);
+      xyzDirT = this->DirT.mapeiaTrajetoriaCircular(this->DirT.xyz_ini, xyzDirT, this->DirT.P3[0] - this->DirT.xyz_ini.x, angle_traj_rad, deltaOmbDirT);
+    // if (abs(angle_rad) > 0.18){
+    // }
+    }
+    int3 anglesEsqF = this->EsqF.cinematicaInversa(xyzEsqF);
+    int3 anglesDirM = this->DirM.cinematicaInversa(xyzDirM);
+    int3 anglesEsqT = this->EsqT.cinematicaInversa(xyzEsqT);
+    int3 anglesDirF = this->DirF.cinematicaInversa(xyzDirF);
+    int3 anglesEsqM = this->EsqM.cinematicaInversa(xyzEsqM);
+    int3 anglesDirT = this->DirT.cinematicaInversa(xyzDirT);
+    this->EsqF.moverPata(anglesEsqF.ombro, anglesEsqF.femur, anglesEsqF.tibia);
+    this->DirM.moverPata(anglesDirM.ombro, anglesDirM.femur, anglesDirM.tibia);
+    this->EsqT.moverPata(anglesEsqT.ombro, anglesEsqT.femur, anglesEsqT.tibia);
+    this->DirF.moverPata(anglesDirF.ombro, anglesDirF.femur, anglesDirF.tibia);
+    this->EsqM.moverPata(anglesEsqM.ombro, anglesEsqM.femur, anglesEsqM.tibia);
+    this->DirT.moverPata(anglesDirT.ombro, anglesDirT.femur, anglesDirT.tibia);
+  }
+*/
+
   void parar(){
     this->EsqF.moverPosIni();
     this->DirM.moverPosIni();
@@ -610,8 +766,8 @@ void setup() {
 
   delay(2000);
 
-  scarlet.ligarHexapod();
-  delay(2000);
+  // scarlet.ligarHexapod();
+  // delay(2000);
 
   xTaskCreate(TaskHexapod, "hexapod", 4096, NULL, 1, NULL);
   xTaskCreate(TaskComunicacao, "comunicacao", 4096, NULL, 1, NULL);
@@ -621,7 +777,7 @@ void setup() {
 void loop(){
 }
 
-int estado = 0;
+int estado = 11;
 int angle_joystick = 90;
 
 void TaskHexapod(void *pvParameters) {
@@ -629,25 +785,14 @@ void TaskHexapod(void *pvParameters) {
   int totalPontos = TOTAL_PONTOS;
   for (;;) {
     if(estado == 1){ // "Dar a patinha": move patinha para a posição X = [x_ini+10;y_ini;z_ini+10]
-        totalPontos = 200;
+        totalPontos = 50;
         scarlet.darPatinha(k,totalPontos);
         if (k < (totalPontos/2)){
           k++;
         }
-        vTaskDelay(pdMS_TO_TICKS(7));
+        vTaskDelay(pdMS_TO_TICKS(2));
     }
-    else if(estado == 2){ // Andar omnidirecional
-        float angle_rad = (float(angle_joystick)-90)*M_PI/180.0;
-        scarlet.andar(k,angle_rad);
-        if (k == 0){
-          k = TOTAL_PONTOS - 1;
-        }
-        else{
-          k--;
-        }
-        vTaskDelay(pdMS_TO_TICKS(1));
-    }
-    else if(estado == 3){ // Rebola
+    else if(estado == 2){ // Rebola
         // int3 angles = {20,0,0};
         int3 angles = scarlet.circularRollPitchYaw(k, 10);
         scarlet.cinematicaInversaCorpo(angles);
@@ -658,6 +803,16 @@ void TaskHexapod(void *pvParameters) {
           k++;
         }
         vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    else if(estado == 3){ // Andar omnidirecional
+        float angle_rad = joystickToRad(angle_joystick);
+        k = scarlet.andarCircular(k,8,angle_rad);
+        vTaskDelay(pdMS_TO_TICKS(1));
+    }
+    else if(estado == 9){ // Arma
+        scarlet.ligarHexapod();
+        estado = 0;
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
     else if(estado == 10){ // Desarma
         scarlet.desligarHexapod();
@@ -682,11 +837,11 @@ void TaskComunicacao(void *pvParameters) {
       if (GamePad.isCirclePressed()){       // "Dar a patinha"
         estado = 1;
       }
-      else if(GamePad.getRadius() > 2){     // Andar omnidirecional
-        angle_joystick = GamePad.getAngle();
+      else if(GamePad.isTrianglePressed()){ // Rebola
         estado = 2;
       }
-      else if(GamePad.isTrianglePressed()){ // Rebola
+      else if(GamePad.getRadius() > 2){     // Andar omnidirecional
+        angle_joystick = GamePad.getAngle();
         estado = 3;
       }
       else if(GamePad.isSelectPressed()){   // Desarma
@@ -694,6 +849,11 @@ void TaskComunicacao(void *pvParameters) {
       }
       else{
         estado = 0;
+      }
+    }
+    else{
+      if(GamePad.isStartPressed()){         // Arma
+        estado = 9;
       }
     }
     vTaskDelay(pdMS_TO_TICKS(20));   
