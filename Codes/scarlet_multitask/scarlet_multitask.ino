@@ -5,7 +5,7 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <math.h>
 
-#define TOTAL_PONTOS 500//2000//66
+#define TOTAL_PONTOS 25//2000//66
 #define METADE_PONTOS TOTAL_PONTOS / 2
 #define QUARTO_PONTOS TOTAL_PONTOS / 4
 #define TOTAL_PONTOS_CIRCULAR 500
@@ -230,7 +230,9 @@ struct Pata {
     floatxyz xyz;
     int kn = (k + offset + QUARTO_PONTOS) % TOTAL_PONTOS;
     if (kn < METADE_PONTOS){
-      float t = float(kn)/(METADE_PONTOS-1);
+      float ang = M_PI*float(kn)/(METADE_PONTOS-1);
+      float t = (1.0 - cos(ang))/2.0;
+      // float t = float(kn)/(METADE_PONTOS-1);
       float u = 1 - t;
       xyz.x = xyz_ini.x + cos(angle_rad)*(-xyz_ini.x + u * u * u * this->P0[0] + 3 * u * u * t * this->P1[0] + 3 * u * t * t * this->P2[0] + t * t * t * this->P3[0]);
       xyz.y = xyz_ini.y + sin(angle_rad)*(-xyz_ini.x + u * u * u * this->P0[0] + 3 * u * u * t * this->P1[0] + 3 * u * t * t * this->P2[0] + t * t * t * this->P3[0]);
@@ -771,7 +773,7 @@ void TaskHexapod(void *pvParameters) {
     else if(estado == 3){ // Andar omnidirecional
         float angle_rad = joystickToRad(angle_joystick);
         k = scarlet.andarCircular(k,8,angle_rad);
-        vTaskDelay(pdMS_TO_TICKS(1));
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
     else if(estado == 9){ // Arma
         scarlet.ligarHexapod();
