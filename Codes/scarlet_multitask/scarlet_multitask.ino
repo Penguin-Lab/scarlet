@@ -293,11 +293,11 @@ struct Pata {
     this->P0[0] = this->xyz_ini.x - half_stepping;
     this->P0[1] = this->xyz_ini.z;
     this->P1[0] = this->P0[0] + half_stepping/2.0;
-    this->P1[1] = this->P0[1] + 2.0*half_stepping;
+    this->P1[1] = this->P0[1] + 2.0*abs(half_stepping);
     this->P3[0] = this->P0[0] + step_length;
     this->P3[1] = this->P0[1];
     this->P2[0] = this->P3[0] - half_stepping/2.0;
-    this->P2[1] = this->P0[1] + 2.0*half_stepping;
+    this->P2[1] = this->P0[1] + abs(2.0*half_stepping);
   }
 
   floatxyz iniciaPata(int3 anglesIni) {
@@ -748,7 +748,7 @@ void TaskHexapod(void *pvParameters) {
   for (;;) {
     if(estado == 1){ // "Dar a patinha": move patinha para a posição X = [x_ini+10;y_ini;z_ini+10]
         totalPontos = 50;
-        int3 angles = {10,10,0};
+        int3 angles = {-10,-10,0};
         // scarlet.darPatinha(k,totalPontos);
         scarlet.darPatinhaAlto(k,angles,totalPontos);
         if (k < (totalPontos/2)){
