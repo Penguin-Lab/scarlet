@@ -57,6 +57,8 @@ No projeto, foi desenvolvida uma placa de circuito para servir como shield para 
 
 <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp0.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/circuit2.png" height="300"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp2.png" height="280"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/shield_esp_projeto.png" height="280"> <img src="https://github.com/Penguin-Lab/scarlet/blob/main/images/circuit1.png" height="280">
 
+## Calibração dos motores
+A calibração dos motores é feita utilizando o [CALIBRADOR DE MOTORES](https://github.com/Penguin-Lab/calib_servomotor) conectado às PCAs da Scarlet. Isso deve ser feito pelo clock das PCAs ser diferente de uma placa para outra. Logo, os motores da esquerda são calibrados utilizando a PCA da esquerda e os da direita com a PCA da direita. Os valores retornados pela calibração são jogados nesta [PLANILHA](https://docs.google.com/spreadsheets/d/1Kh9AVbb79lXnJq5dlCiB7NEVVmcJWRX6X2CdDR9_QZo/edit?usp=sharing). A planilha ajeita os valores de PWM retornados na IDE do Arduino para valores que representem 0 e 180 graus dos motores já na estrutura das patas. Esses valores são os mesmos listados no código de comando da Scarlet.
 
 ## Componentes eletrônicos
 Os componentes eletrônicos embarcados no robô e equipamentos utilizados são:
