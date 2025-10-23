@@ -9,7 +9,7 @@
 #define METADE_PONTOS TOTAL_PONTOS / 2
 #define QUARTO_PONTOS TOTAL_PONTOS / 4
 #define TOTAL_PONTOS_CIRCULAR 25
-#define DEBUG_SIMULADOR true
+#define DEBUG_SIMULADOR false
 
 int OFFSET_ESQF = 0;
 int OFFSET_DIRT = METADE_PONTOS;
@@ -771,7 +771,7 @@ Pata EsqT = {&pwmE, 0, 1, 2, 350, 786, 327, 756, 149, -283};        // Zioto e J
 
 Pata DirF = {&pwmD, 0, 1, 2, 326, -59, 330, -72, 456, 849};         // Gustavo e Duda
 Pata DirM = {&pwmD, 8, 9, 10, 303, -96, 305, -89, 478, 870};        // Allefe
-Pata DirT = {&pwmD, 12, 13, 14, 330, -64, 318, -75, 475, 872};      // Jobs e Rafas
+Pata DirT = {&pwmD, 12, 13, 14, 330, -64, 256, -46, 475, 872};      // Jobs e Rafas ACERTAR CALIBRACAO DO FEMUR
 
 Hexapod scarlet = {EsqF, EsqM, EsqT, DirF, DirM, DirT};
 
