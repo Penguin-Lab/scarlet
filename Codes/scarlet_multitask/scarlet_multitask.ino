@@ -7,7 +7,6 @@
 
 #define TOTAL_PONTOS 25
 #define METADE_PONTOS TOTAL_PONTOS / 2
-#define QUARTO_PONTOS TOTAL_PONTOS / 4
 #define TOTAL_PONTOS_CIRCULAR 25
 #define DEBUG_SIMULADOR false
 
@@ -229,11 +228,9 @@ struct Pata {
 
   floatxyz trajetoriaLinear(floatxyz xyz_ini, int k, int offset, float angle_rad){
     floatxyz xyz;
-    int kn = (k + offset + QUARTO_PONTOS) % TOTAL_PONTOS;
+    int kn = (k + offset) % TOTAL_PONTOS;
     if (kn < METADE_PONTOS){
-      float ang = M_PI*float(kn)/(METADE_PONTOS-1);
-      float t = (1.0 - cos(ang))/2.0;
-      // float t = float(kn)/(METADE_PONTOS-1);
+      float t = float(kn)/(METADE_PONTOS-1);
       float u = 1 - t;
       xyz.x = xyz_ini.x + cos(angle_rad)*(-xyz_ini.x + u * u * u * this->P0[0] + 3 * u * u * t * this->P1[0] + 3 * u * t * t * this->P2[0] + t * t * t * this->P3[0]);
       xyz.y = xyz_ini.y + sin(angle_rad)*(-xyz_ini.x + u * u * u * this->P0[0] + 3 * u * u * t * this->P1[0] + 3 * u * t * t * this->P2[0] + t * t * t * this->P3[0]);
@@ -771,7 +768,7 @@ Pata EsqT = {&pwmE, 0, 1, 2, 350, 786, 327, 756, 149, -283};        // Zioto e J
 
 Pata DirF = {&pwmD, 0, 1, 2, 326, -59, 330, -72, 456, 849};         // Gustavo e Duda
 Pata DirM = {&pwmD, 8, 9, 10, 303, -96, 305, -89, 478, 870};        // Allefe
-Pata DirT = {&pwmD, 12, 13, 14, 330, -64, 256, -46, 475, 872};      // Jobs e Rafas ACERTAR CALIBRACAO DO FEMUR
+Pata DirT = {&pwmD, 12, 13, 14, 330, -64, 234, -44, 475, 872};      // Jobs e Rafas ACERTAR CALIBRACAO DO FEMUR
 
 Hexapod scarlet = {EsqF, EsqM, EsqT, DirF, DirM, DirT};
 
