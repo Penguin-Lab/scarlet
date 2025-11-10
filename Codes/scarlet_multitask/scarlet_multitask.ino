@@ -852,7 +852,7 @@ void TaskHexapod(void *pvParameters) {
         vTaskDelay(pdMS_TO_TICKS(20));
     }
     else if(estado == 3){ // Andar omnidirecional ou rotacional
-        float angle = joystickToInt(angle_joystick);
+        float angle = joystickToInt(angle_joystick,20);
         if (mode == 0){
 		  float angle_rad = angle*M_PI/180.0;
           k = scarlet.andar(k,angle_rad);
